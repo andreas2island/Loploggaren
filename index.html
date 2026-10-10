@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Löploggaren – ladda ned</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='112' fill='%23A63D24'/%3E%3Crect x='96' y='150' width='320' height='212' rx='106' fill='none' stroke='%23F4F1EA' stroke-width='34'/%3E%3Ccircle cx='336' cy='157' r='30' fill='%23F2C14E'/%3E%3C/svg%3E">
+<style>
+  :root { --bg:#F4F1EA; --ink:#221C17; --muted:#62574D; --pine:#A63D24; --line:#DDD3C4; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#15120F; --ink:#F0E9E1; --muted:#B9AB9C; --pine:#F0916F; --line:#3D332B; } }
+  body { margin:0; background:var(--bg); color:var(--ink); font:17px/1.5 system-ui, sans-serif; }
+  main { max-width:520px; margin:0 auto; padding:40px 18px; display:flex; flex-direction:column; gap:16px; }
+  h1 { font-family: Georgia, serif; font-size:2.2rem; margin:0; }
+  .btn { display:flex; align-items:center; justify-content:center; min-height:56px; border-radius:14px; background:var(--pine); color:#fff; font-weight:700; text-decoration:none; font-size:1.1rem; }
+  ol { padding-left:1.2em; } li { margin:6px 0; } small, .muted { color:var(--muted); }
+  .old a { color:var(--pine); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Löploggaren</h1>
+  <p>Logga löprundor tillsammans med familj och vänner.</p>
+  <a class="btn" id="dl" href="#">Hämtar senaste versionen…</a>
+  <small id="ver"></small>
+  <ol>
+    <li>Tryck på knappen och ladda ned filen.</li>
+    <li>Öppna filen. Tillåt installation från den här källan om telefonen frågar. Varnar Play Protect: välj <em>Installera ändå</em>.</li>
+    <li>Öppna appen och välj <em>Jag har fått en inbjudan</em> – klistra in hela meddelandet du fått.</li>
+  </ol>
+  <p class="muted">Har du redan appen? Installera den nya versionen ovanpå – dina rundor finns kvar.</p>
+  <details class="old"><summary>Äldre versioner</summary><ul id="old"></ul></details>
+</main>
+<script>
+// Hittar APK-filerna i samma repo och väljer den högsta versionen (filnamn loploggaren-X.Y.Z.apk).
+(async () => {
+  const dl = document.getElementById('dl'), ver = document.getElementById('ver'), old = document.getElementById('old');
+  const owner = location.hostname.split('.')[0], repo = location.pathname.split('/').filter(Boolean)[0] || `${owner}.github.io`;
+  try {
+    const r = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/`);
+    const files = (await r.json()).filter(f => /^l[öo]ploggaren-(\d+)\.(\d+)\.(\d+)\.apk$/i.test(f.name));
+    const v = n => n.match(/(\d+)\.(\d+)\.(\d+)/).slice(1).map(Number);
+    files.sort((a, b) => { const x = v(a.name), y = v(b.name); return y[0] - x[0] || y[1] - x[1] || y[2] - x[2]; });
+    if (!files.length) throw new Error('inga filer');
+    dl.href = encodeURIComponent(files[0].name);
+    dl.textContent = `Ladda ned version ${v(files[0].name).join('.')}`;
+    ver.textContent = `${(files[0].size / 1048576).toFixed(1).replace('.', ',')} MB · Android 7 eller senare`;
+    for (const f of files.slice(1, 8)) { const li = document.createElement('li'); const a = document.createElement('a'); a.href = encodeURIComponent(f.name); a.textContent = `Version ${v(f.name).join('.')}`; li.append(a); old.append(li); }
+  } catch { dl.textContent = 'Kunde inte hitta appen – försök igen senare'; dl.removeAttribute('href'); }
+})();
+</script>
+</body>
+</html>
